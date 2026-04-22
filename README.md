@@ -1,23 +1,40 @@
 # SDM — Simple Download Manager
 
-A multithreaded, segmented HTTP download manager with a REST API and browser UI.
+![Python](https://img.shields.io/badge/Python-3.10+-blue)
+![FastAPI](https://img.shields.io/badge/FastAPI-latest-green)
+![License](https://img.shields.io/badge/License-MIT-yellow)
+![Status](https://img.shields.io/badge/Status-Complete-brightgreen)
+
+> *A multithreaded, segmented HTTP download manager — built as an IDM/XDM equivalent for the Distributed Systems course at MedTech.*
 
 ---
 
-## Features
+## ✨ Features
 
-- **Parallel segmented downloads** — splits files into N byte-range segments downloaded simultaneously
-- **Pause / Resume / Cancel** — per-download control with no data loss on resume
-- **Automatic fallback** — single-segment mode when server doesn't support `Accept-Ranges`
-- **Exponential back-off retry** — each segment retries up to `MAX_RETRIES` times (1 s, 2 s, 4 s …)
-- **Persistent history** — every download recorded in SQLite with status, speed, and timestamps
-- **REST API** — full CRUD via FastAPI with auto-generated OpenAPI docs at `/docs`
-- **Browser UI** — Vanilla JS SPA with live progress bars, speed, ETA, and inline controls
-- **Native folder picker** — `GET /browse-folder` opens a Tkinter dialog on the server
+- ⚡ Downloads files up to 4× faster using parallel segmented connections
+- 🔀 Splits every file into N byte-range segments (HTTP Range — RFC 7233)
+- 🧵 Each segment runs in its own thread via `ThreadPoolExecutor`
+- 🔁 Auto-retry with exponential backoff (1s → 2s → 4s) on failure
+- ⏸ Pause, Resume, Cancel any download at any time
+- 💾 Persistent download history stored in SQLite
+- 🖥 Clean browser UI — no frontend framework, pure Vanilla JS
+- 📁 Native OS folder picker — no typing paths manually
 
 ---
 
-## Architecture
+## ⚙️ How It Works
+
+- SDM sends a `HEAD` request to detect file size and Range support
+- Splits the file into N equal byte ranges: `bytes=0–24MB`, `bytes=25–49MB` …
+- Opens N parallel TCP connections, one per segment
+- Each thread downloads its range independently → written to `.partN` temp file
+- Bypasses per-connection throttling → effective speed multiplied by N
+- `FileAssembler` concatenates all parts in order → final file
+- If server doesn't support `Range`: automatic fallback to single-thread
+
+---
+
+## 🏗 Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -45,31 +62,7 @@ A multithreaded, segmented HTTP download manager with a REST API and browser UI.
 
 ---
 
-## Project Structure
-
-```
-sdm/
-├── main.py                   # FastAPI app factory + uvicorn entry point
-├── config.py                 # All tuneable constants
-├── api/
-│   └── routes.py             # All REST endpoints (FastAPI Router)
-├── core/
-│   ├── download_manager.py   # Orchestrator — owns all DownloadState objects
-│   ├── segment_worker.py     # Downloads one byte-range segment
-│   ├── thread_controller.py  # ThreadPoolExecutor wrapper
-│   └── file_assembler.py     # Merges .partN files → final file
-├── persistence/
-│   └── history.py            # SQLite CRUD (sdm_history.db)
-├── utils/
-│   └── http_utils.py         # HEAD probe, filename extraction, range check
-├── ui/
-│   └── index.html            # Single-file Vanilla JS SPA
-└── requirements.txt
-```
-
----
-
-## Installation
+## 🚀 Installation
 
 **Prerequisites:** Python 3.10 or later.
 
@@ -86,7 +79,7 @@ SQLite is part of Python's standard library — `sdm_history.db` is created auto
 
 ---
 
-## Running the Application
+## ▶️ Running the Application
 
 ```bash
 cd sdm
@@ -97,7 +90,7 @@ Server starts on `http://0.0.0.0:8000`. Open `http://localhost:8000` for the UI 
 
 ---
 
-## API Reference
+## 📡 API Reference
 
 | Method | Path | Description |
 |---|---|---|
@@ -112,7 +105,7 @@ Server starts on `http://0.0.0.0:8000`. Open `http://localhost:8000` for the UI 
 
 ---
 
-## Configuration
+## ⚙️ Configuration
 
 All constants live in `config.py`.
 
