@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+.env
+sdm_history.db
+downloads/
+*.part*
+*.log

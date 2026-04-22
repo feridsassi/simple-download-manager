@@ -1,0 +1,1628 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SDM — Simple Download Manager</title>
+  <style>
+    /* ── Reset ────────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:        #0d0f18;
+      --sidebar:   #0f1120;
+      --card:      #13162a;
+      --hover:     #1a1d2e;
+      --selected:  #1e2240;
+      --border:    #1e2133;
+      --input:     #1a1d2e;
+      --input-bd:  #2a2f4a;
+      --text:      #e2e8f0;
+      --muted:     #64748b;
+      --sub:       #94a3b8;
+      --blue:      #4f8ef7;
+      --teal:      #06b6d4;
+      --purple:    #7c3aed;
+      --green:     #10b981;
+      --yellow:    #f59e0b;
+      --red:       #ef4444;
+      --font:      'Segoe UI', system-ui, -apple-system, sans-serif;
+      --radius:    6px;
+    }
+
+    html, body {
+      height: 100%;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    /* ── App shell: flex column full height ──────────────────────── */
+    #app {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+
+    /* ── Top bar ─────────────────────────────────────────────────── */
+    #top-bar {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 42px;
+      padding: 0 16px;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .top-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .app-icon {
+      font-size: 18px;
+      line-height: 1;
+      color: var(--blue);
+    }
+
+    .app-name {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.2px;
+    }
+
+    .app-subtitle {
+      font-size: 11px;
+      color: var(--muted);
+      padding-left: 6px;
+      border-left: 1px solid var(--border);
+      margin-left: 2px;
+    }
+
+    .top-right {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--muted);
+      transition: background 0.3s, box-shadow 0.3s;
+      flex-shrink: 0;
+    }
+
+    .status-dot.online  { background: var(--green); box-shadow: 0 0 6px var(--green); }
+    .status-dot.offline { background: var(--red);   box-shadow: 0 0 6px var(--red);   }
+
+    /* ── Toolbar ─────────────────────────────────────────────────── */
+    #toolbar {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      height: 44px;
+      padding: 0 12px;
+      background: #13162a;
+      border-bottom: 1px solid var(--border);
+      user-select: none;
+    }
+
+    .tb-btn {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      height: 30px;
+      padding: 0 12px;
+      background: var(--hover);
+      border: 1px solid transparent;
+      border-radius: var(--radius);
+      color: var(--sub);
+      font-family: var(--font);
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.12s, color 0.12s, border-color 0.12s;
+    }
+
+    .tb-btn:hover {
+      background: #252840;
+      color: var(--text);
+      border-color: var(--border);
+    }
+
+    .tb-btn.accent {
+      background: var(--blue);
+      color: #fff;
+      border-color: transparent;
+    }
+
+    .tb-btn.accent:hover { background: #3a7aef; }
+
+    .tb-sep {
+      width: 1px;
+      height: 22px;
+      background: var(--border);
+      margin: 0 4px;
+      flex-shrink: 0;
+    }
+
+    /* ── Body (sidebar + content) ────────────────────────────────── */
+    #app-body {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+    }
+
+    /* ── Sidebar ─────────────────────────────────────────────────── */
+    #sidebar {
+      width: 220px;
+      flex-shrink: 0;
+      background: var(--sidebar);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+
+    .sidebar-header {
+      padding: 14px 14px 8px;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+    }
+
+    .cat-list {
+      list-style: none;
+      padding: 0 6px;
+      margin-bottom: 8px;
+    }
+
+    .cat-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 10px;
+      border-radius: var(--radius);
+      cursor: pointer;
+      font-size: 12px;
+      color: var(--sub);
+      transition: background 0.1s, color 0.1s;
+    }
+
+    .cat-item:hover    { background: var(--hover); color: var(--text); }
+    .cat-item.selected { background: #252850; color: var(--text); }
+
+    .cat-label { display: flex; align-items: center; gap: 6px; }
+
+    .cat-count {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--muted);
+      background: var(--selected);
+      padding: 1px 6px;
+      border-radius: 99px;
+      min-width: 20px;
+      text-align: center;
+    }
+
+    .sidebar-divider {
+      height: 1px;
+      background: var(--border);
+      margin: 8px 10px;
+    }
+
+    .sidebar-section { padding: 0 6px; margin-bottom: 4px; }
+
+    .sidebar-section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 10px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--muted);
+      cursor: pointer;
+      border-radius: var(--radius);
+      transition: background 0.1s;
+      user-select: none;
+    }
+
+    .sidebar-section-head:hover { background: var(--hover); color: var(--sub); }
+
+    .sidebar-section-head .arrow { font-size: 9px; transition: transform 0.2s; }
+    .sidebar-section-head.open .arrow { transform: rotate(90deg); }
+
+    .section-body {
+      overflow: hidden;
+      max-height: 0;
+      transition: max-height 0.2s ease;
+    }
+
+    .section-body.open { max-height: 300px; }
+
+    .section-dl-item {
+      padding: 4px 10px 4px 20px;
+      font-size: 11px;
+      color: var(--muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* ── Content area ────────────────────────────────────────────── */
+    #content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background: var(--bg);
+    }
+
+    /* ── Table wrapper ───────────────────────────────────────────── */
+    #table-wrapper {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: auto;
+    }
+
+    #downloads-table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+    }
+
+    /* Column widths */
+    .col-name   { width: auto; min-width: 220px; }
+    .col-size   { width: 90px; }
+    .col-status { width: 200px; }
+    .col-time   { width: 90px; }
+    .col-date   { width: 90px; }
+    .col-menu   { width: 80px; }
+
+    thead {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: #13162a;
+    }
+
+    thead th {
+      padding: 9px 10px;
+      text-align: left;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+      user-select: none;
+    }
+
+    .sort-arrow {
+      color: #2a3050;
+      font-size: 9px;
+      margin-left: 3px;
+    }
+
+    /* Rows */
+    tbody tr {
+      background: var(--card);
+      transition: background 0.1s;
+      cursor: default;
+    }
+
+    tbody tr:nth-child(even) { background: #141728; }
+    tbody tr:hover { background: var(--hover) !important; }
+    tbody tr.row-selected { background: var(--selected) !important; }
+
+    tbody td {
+      padding: 9px 10px;
+      border-bottom: 1px solid #1a1d30;
+      vertical-align: middle;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+
+    tbody tr:last-child td { border-bottom: none; }
+
+    /* File cell */
+    .file-cell { display: flex; align-items: center; gap: 10px; overflow: hidden; }
+
+    .file-icon {
+      font-size: 20px;
+      line-height: 1;
+      flex-shrink: 0;
+    }
+
+    .file-info { overflow: hidden; }
+
+    .file-name {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .file-type {
+      font-size: 10px;
+      color: var(--muted);
+      margin-top: 1px;
+    }
+
+    /* Size / date / time cells */
+    .cell-size, .cell-time, .cell-date {
+      font-size: 12px;
+      color: var(--sub);
+    }
+
+    /* ── Status / Progress ───────────────────────────────────────── */
+    .dl-status-wrap { display: flex; align-items: center; gap: 7px; }
+
+    .dl-bar-track {
+      flex: 1;
+      height: 6px;
+      background: #1e2240;
+      border-radius: 3px;
+      overflow: hidden;
+      min-width: 60px;
+    }
+
+    .dl-bar-fill {
+      height: 100%;
+      border-radius: 3px;
+      background: linear-gradient(90deg, var(--purple), var(--teal));
+      transition: width 0.45s ease;
+      min-width: 0;
+    }
+
+    .dl-bar-fill.animating {
+      background: linear-gradient(90deg, var(--purple), var(--teal), var(--purple));
+      background-size: 200% 100%;
+      animation: shimmer 1.8s linear infinite;
+    }
+
+    .dl-bar-fill.paused-fill { background: #2a3055; }
+
+    @keyframes shimmer {
+      0%   { background-position:  100% center; }
+      100% { background-position: -100% center; }
+    }
+
+    .dl-pct {
+      font-size: 11px;
+      color: var(--sub);
+      min-width: 38px;
+      text-align: right;
+      flex-shrink: 0;
+    }
+
+    /* ── Badges ──────────────────────────────────────────────────── */
+    .badge {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      padding: 2px 8px;
+      border-radius: 99px;
+      white-space: nowrap;
+    }
+
+    .badge-completed  { background: rgba(16,185,129,0.15);  color: var(--green);  }
+    .badge-failed     { background: rgba(239,68,68,0.15);   color: var(--red);    }
+    .badge-cancelled  { background: rgba(100,116,139,0.15); color: var(--muted);  }
+    .badge-paused     { background: rgba(245,158,11,0.12);  color: var(--yellow); }
+    .badge-pending    { background: rgba(79,142,247,0.12);  color: var(--blue);   }
+
+    /* ── Inline row action buttons (pause / resume) ──────────────── */
+    .row-act-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      height: 24px;
+      min-width: 28px;
+      padding: 0 8px;
+      border-radius: 99px;
+      border: 1px solid var(--border);
+      background: transparent;
+      font-size: 11px;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: background 0.1s, color 0.1s, border-color 0.1s;
+    }
+
+    .row-act-btn.act-pause {
+      color: var(--sub);
+    }
+
+    .row-act-btn.act-pause:hover {
+      background: var(--selected);
+      color: var(--text);
+    }
+
+    .row-act-btn.act-resume {
+      color: var(--green);
+      border-color: rgba(16,185,129,0.35);
+    }
+
+    .row-act-btn.act-resume:hover {
+      background: rgba(16,185,129,0.1);
+    }
+
+    /* ── Row context menu button ─────────────────────────────────── */
+    .ctx-btn {
+      visibility: hidden;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--muted);
+      font-size: 13px;
+      cursor: pointer;
+      padding: 2px 6px;
+      line-height: 1;
+      flex-shrink: 0;
+      transition: background 0.1s, color 0.1s;
+    }
+
+    tr:hover .ctx-btn, tr.row-selected .ctx-btn { visibility: visible; }
+    .ctx-btn:hover { background: var(--selected); color: var(--text); }
+
+    /* Menu cell uses flex so action btn + ⋮ btn sit side by side */
+    .menu-cell-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 4px;
+    }
+
+    /* ── Floating context menu ───────────────────────────────────── */
+    #ctx-menu {
+      position: fixed;
+      z-index: 500;
+      background: #1a1d2e;
+      border: 1px solid #2a3050;
+      border-radius: var(--radius);
+      padding: 4px 0;
+      min-width: 160px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    }
+
+    .ctx-item {
+      padding: 7px 14px;
+      font-size: 12px;
+      color: var(--sub);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: background 0.1s, color 0.1s;
+    }
+
+    .ctx-item:hover     { background: var(--selected); color: var(--text); }
+    .ctx-item.ctx-danger { color: var(--red); }
+    .ctx-item.ctx-danger:hover { background: rgba(239,68,68,0.1); }
+
+    .ctx-sep {
+      height: 1px;
+      background: var(--border);
+      margin: 3px 0;
+    }
+
+    /* ── Empty state ─────────────────────────────────────────────── */
+    .empty-state {
+      text-align: center;
+      color: var(--muted);
+      padding: 56px 0;
+      font-size: 13px;
+    }
+
+    /* ── Status bar ──────────────────────────────────────────────── */
+    #status-bar {
+      flex-shrink: 0;
+      height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 14px;
+      background: var(--bg);
+      border-top: 1px solid var(--border);
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    /* ── Modal overlay ───────────────────────────────────────────── */
+    #modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.72);
+      z-index: 200;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.18s;
+    }
+
+    #modal-overlay.open {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    #modal {
+      background: #1a1d2e;
+      border: 1px solid #2a3050;
+      border-radius: 10px;
+      width: 500px;
+      max-width: calc(100vw - 32px);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+      transform: translateY(-12px);
+      transition: transform 0.18s;
+    }
+
+    #modal-overlay.open #modal { transform: translateY(0); }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px 14px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .modal-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .modal-close {
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      font-size: 16px;
+      cursor: pointer;
+      line-height: 1;
+      padding: 2px 6px;
+      border-radius: 4px;
+      transition: background 0.1s, color 0.1s;
+    }
+
+    .modal-close:hover { background: var(--selected); color: var(--text); }
+
+    .modal-body { padding: 18px 20px; }
+
+    .modal-label {
+      display: block;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .modal-body input[type="url"],
+    .modal-body input[type="number"] {
+      width: 100%;
+      background: var(--input);
+      border: 1px solid var(--input-bd);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 13px;
+      padding: 8px 12px;
+      outline: none;
+      transition: border-color 0.15s;
+      margin-bottom: 14px;
+    }
+
+    .modal-body input:focus { border-color: var(--blue); }
+    .modal-body input::placeholder { color: var(--muted); }
+
+    .modal-row-2 {
+      display: flex;
+      gap: 12px;
+    }
+
+    .modal-row-2 .modal-field { flex: 1; }
+    .modal-row-2 input[type="number"] { text-align: center; }
+
+    .modal-path-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--input);
+      border: 1px solid var(--input-bd);
+      border-radius: var(--radius);
+      padding: 7px 10px;
+      margin-bottom: 14px;
+    }
+
+    .modal-path-text {
+      flex: 1;
+      font-size: 12px;
+      color: var(--sub);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .btn-browse {
+      flex-shrink: 0;
+      background: var(--selected);
+      border: 1px solid #2a3050;
+      border-radius: 4px;
+      color: var(--sub);
+      font-family: var(--font);
+      font-size: 11px;
+      font-weight: 600;
+      padding: 4px 10px;
+      cursor: pointer;
+      transition: background 0.1s, color 0.1s;
+    }
+
+    .btn-browse:hover { background: #252850; color: var(--text); }
+
+    .modal-msg {
+      font-size: 12px;
+      min-height: 18px;
+      margin-top: -6px;
+    }
+
+    .modal-msg.error { color: var(--red); }
+    .modal-msg.info  { color: var(--muted); }
+
+    .modal-footer {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
+      padding: 14px 20px;
+      border-top: 1px solid var(--border);
+    }
+
+    .btn-cancel-modal {
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--muted);
+      font-family: var(--font);
+      font-size: 13px;
+      font-weight: 500;
+      padding: 8px 16px;
+      cursor: pointer;
+      transition: border-color 0.12s, color 0.12s;
+    }
+
+    .btn-cancel-modal:hover { border-color: var(--sub); color: var(--text); }
+
+    .btn-start-modal {
+      background: var(--blue);
+      border: none;
+      border-radius: var(--radius);
+      color: #fff;
+      font-family: var(--font);
+      font-size: 13px;
+      font-weight: 600;
+      padding: 8px 20px;
+      cursor: pointer;
+      transition: background 0.12s, opacity 0.12s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-start-modal:hover:not(:disabled) { background: #3a7aef; }
+    .btn-start-modal:disabled { cursor: not-allowed; opacity: 0.55; }
+
+    /* Spinner */
+    .btn-spinner {
+      display: inline-block;
+      width: 11px;
+      height: 11px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      flex-shrink: 0;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Toast ───────────────────────────────────────────────────── */
+    .toast {
+      position: fixed;
+      bottom: 44px;
+      left: 50%;
+      transform: translateX(-50%) translateY(14px);
+      background: #23263a;
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-size: 12px;
+      padding: 9px 20px;
+      border-radius: 8px;
+      opacity: 0;
+      pointer-events: none;
+      z-index: 999;
+      white-space: nowrap;
+      transition: opacity 0.22s, transform 0.22s;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* ── Scrollbar ───────────────────────────────────────────────── */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #2a3050; border-radius: 99px; }
+    ::-webkit-scrollbar-thumb:hover { background: #3a4060; }
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ── Top Bar ─────────────────────────────────────────────────── -->
+  <div id="top-bar">
+    <div class="top-left">
+      <span class="app-icon">⬇</span>
+      <span class="app-name">SDM</span>
+      <span class="app-subtitle">Simple Download Manager</span>
+    </div>
+    <div class="top-right">
+      <span class="status-dot" id="server-dot"></span>
+      <span id="server-label">Connecting…</span>
+    </div>
+  </div>
+
+  <!-- ── Toolbar ──────────────────────────────────────────────────── -->
+  <div id="toolbar">
+    <button class="tb-btn accent" onclick="openModal()">⬇ Add URL</button>
+    <div class="tb-sep"></div>
+    <button class="tb-btn" onclick="stopAll()">⏹ Stop All</button>
+  </div>
+
+  <!-- ── App Body ──────────────────────────────────────────────────── -->
+  <div id="app-body">
+
+    <!-- ── Sidebar ─────────────────────────────────────────────── -->
+    <div id="sidebar">
+      <div class="sidebar-header">Categories</div>
+
+      <ul class="cat-list">
+        <li class="cat-item selected" data-cat="all" onclick="selectCat(this)">
+          <span class="cat-label">📁 All Downloads</span>
+          <span class="cat-count" id="cat-all">0</span>
+        </li>
+        <li class="cat-item" data-cat="music" onclick="selectCat(this)">
+          <span class="cat-label">🎵 Music</span>
+          <span class="cat-count" id="cat-music">0</span>
+        </li>
+        <li class="cat-item" data-cat="compressed" onclick="selectCat(this)">
+          <span class="cat-label">🗜 Compressed</span>
+          <span class="cat-count" id="cat-compressed">0</span>
+        </li>
+        <li class="cat-item" data-cat="videos" onclick="selectCat(this)">
+          <span class="cat-label">🎬 Videos</span>
+          <span class="cat-count" id="cat-videos">0</span>
+        </li>
+        <li class="cat-item" data-cat="programs" onclick="selectCat(this)">
+          <span class="cat-label">💻 Programs</span>
+          <span class="cat-count" id="cat-programs">0</span>
+        </li>
+        <li class="cat-item" data-cat="documents" onclick="selectCat(this)">
+          <span class="cat-label">📄 Documents</span>
+          <span class="cat-count" id="cat-documents">0</span>
+        </li>
+        <li class="cat-item" data-cat="apks" onclick="selectCat(this)">
+          <span class="cat-label">📱 APKs</span>
+          <span class="cat-count" id="cat-apks">0</span>
+        </li>
+        <li class="cat-item" data-cat="images" onclick="selectCat(this)">
+          <span class="cat-label">🖼 Images</span>
+          <span class="cat-count" id="cat-images">0</span>
+        </li>
+      </ul>
+
+      <div class="sidebar-divider"></div>
+
+      <!-- Unfinished collapsible -->
+      <div class="sidebar-section">
+        <div class="sidebar-section-head" id="head-unfinished" onclick="toggleSection('unfinished')">
+          <span>📂 Unfinished</span>
+          <span style="display:flex;align-items:center;gap:6px">
+            <span class="cat-count" id="cat-unfinished">0</span>
+            <span class="arrow">▶</span>
+          </span>
+        </div>
+        <div class="section-body" id="body-unfinished"></div>
+      </div>
+
+      <!-- Finished collapsible -->
+      <div class="sidebar-section">
+        <div class="sidebar-section-head" id="head-finished" onclick="toggleSection('finished')">
+          <span>✅ Finished</span>
+          <span style="display:flex;align-items:center;gap:6px">
+            <span class="cat-count" id="cat-finished">0</span>
+            <span class="arrow">▶</span>
+          </span>
+        </div>
+        <div class="section-body" id="body-finished"></div>
+      </div>
+    </div>
+
+    <!-- ── Content ─────────────────────────────────────────────── -->
+    <div id="content">
+
+      <!-- Downloads table -->
+      <div id="table-wrapper">
+        <table id="downloads-table">
+          <colgroup>
+            <col class="col-name" />
+            <col class="col-size" />
+            <col class="col-status" />
+            <col class="col-time" />
+            <col class="col-date" />
+            <col class="col-menu" />
+          </colgroup>
+          <thead>
+            <tr>
+              <th class="col-name">Name <span class="sort-arrow">↕</span></th>
+              <th class="col-size">Size <span class="sort-arrow">↕</span></th>
+              <th class="col-status">Status <span class="sort-arrow">↕</span></th>
+              <th class="col-time">Time Left <span class="sort-arrow">↕</span></th>
+              <th class="col-date">Date <span class="sort-arrow">↕</span></th>
+              <th class="col-menu"></th>
+            </tr>
+          </thead>
+          <tbody id="all-tbody">
+            <tr id="empty-row">
+              <td colspan="6" class="empty-state">
+                No downloads yet. Click <strong>⬇ Add URL</strong> to get started.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Status bar -->
+      <div id="status-bar">
+        <span id="sb-left">0 downloads</span>
+        <span id="sb-right">⬇ —</span>
+      </div>
+
+    </div><!-- /content -->
+  </div><!-- /app-body -->
+</div><!-- /app -->
+
+<!-- ── Add URL Modal ───────────────────────────────────────────── -->
+<div id="modal-overlay" onclick="handleOverlayClick(event)">
+  <div id="modal">
+    <div class="modal-header">
+      <span class="modal-title">Add New Download</span>
+      <button class="modal-close" onclick="closeModal()" title="Close">✕</button>
+    </div>
+    <div class="modal-body">
+
+      <label class="modal-label" for="url-input">Download URL</label>
+      <input type="url" id="url-input"
+             placeholder="https://example.com/file.zip"
+             autocomplete="off" spellcheck="false" />
+
+      <div class="modal-row-2">
+        <div class="modal-field">
+          <label class="modal-label" for="segments-input">Segments</label>
+          <input type="number" id="segments-input" value="4" min="1" max="16" />
+        </div>
+        <div class="modal-field">
+          <label class="modal-label" for="retries-input">Retries</label>
+          <input type="number" id="retries-input" value="3" min="1" max="10" />
+        </div>
+      </div>
+
+      <label class="modal-label">Save To</label>
+      <div class="modal-path-row">
+        <span class="modal-path-text" id="modal-save-path">/mnt/c/Users/user/Downloads</span>
+        <button class="btn-browse" onclick="handleBrowse()">Browse…</button>
+      </div>
+
+      <p class="modal-msg" id="modal-msg"></p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel-modal" onclick="closeModal()">Cancel</button>
+      <button class="btn-start-modal" id="modal-start-btn" onclick="handleDownload()">
+        Start Download
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Floating context menu ──────────────────────────────────── -->
+<div id="ctx-menu" style="display:none">
+  <div class="ctx-item" onclick="ctxRedownload()">🔄 Redownload</div>
+  <div class="ctx-sep"></div>
+  <div class="ctx-item ctx-danger" onclick="ctxDelete()">🗑 Delete</div>
+</div>
+
+<!-- ── Toast ─────────────────────────────────────────────────── -->
+<div class="toast" id="toast"></div>
+
+<script>
+/* ================================================================
+   SDM Frontend — IDM-style redesign
+   All fetch() calls, API endpoints, and business logic preserved.
+   ================================================================ */
+
+// ── Constants & State ─────────────────────────────────────────────
+const POLL_MS       = 1000;
+const ACTIVE_STATS  = new Set(['pending', 'downloading', 'paused']);
+const HISTORY_STATS = new Set(['completed', 'failed', 'cancelled']);
+
+const allRows    = new Map();   // id → <tr>
+const clearedIds = new Set();  // ids dismissed via Clear History
+
+let selectedId       = null;   // currently selected row id
+let ctxTargetId      = null;   // id under the open context menu
+let activeCategory   = 'all';  // sidebar filter — 'all' | category key
+let modalSavePath    = '/mnt/c/Users/user/Downloads';
+let msgTimer         = null;
+let toastTimer       = null;
+
+// ── Formatters ────────────────────────────────────────────────────
+
+function formatBytes(bytes) {
+  if (bytes == null || bytes <= 0) return '0 B';
+  const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+  const i = Math.min(Math.floor(Math.log(Math.abs(bytes)) / Math.log(1024)), units.length - 1);
+  const v = bytes / Math.pow(1024, i);
+  return `${i === 0 ? v : v.toFixed(1)} ${units[i]}`;
+}
+
+function formatSpeed(bps) {
+  if (!bps || bps <= 0) return '—';
+  return formatBytes(bps) + '/s';
+}
+
+function formatETA(seconds) {
+  if (!seconds || seconds <= 0) return '—';
+  if (seconds < 60) return `${Math.round(seconds)}s`;
+  const m = Math.floor(seconds / 60);
+  const s = Math.round(seconds % 60);
+  return `${m}m ${s}s`;
+}
+
+function formatTime(isoStr) {
+  if (!isoStr) return '—';
+  try { return new Date(isoStr).toLocaleDateString('en-GB', { day:'2-digit', month:'short' }); }
+  catch (_) { return isoStr; }
+}
+
+function escHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+// ── File type utilities ───────────────────────────────────────────
+
+const EXT_MAP = {
+  // Music
+  mp3:'🎵', wav:'🎵', flac:'🎵', aac:'🎵', ogg:'🎵', m4a:'🎵', wma:'🎵',
+  // Compressed
+  zip:'🗜', rar:'🗜', '7z':'🗜', tar:'🗜', gz:'🗜', bz2:'🗜', xz:'🗜',
+  // Videos
+  mp4:'🎬', mkv:'🎬', avi:'🎬', mov:'🎬', wmv:'🎬', webm:'🎬', flv:'🎬', m4v:'🎬',
+  // Programs
+  exe:'💻', msi:'💻', deb:'💻', rpm:'💻', dmg:'💻', pkg:'💻',
+  // Documents
+  pdf:'📄', doc:'📄', docx:'📄', txt:'📄', xls:'📄', xlsx:'📄', ppt:'📄', pptx:'📄', csv:'📄',
+  // APKs
+  apk:'📱',
+  // Images
+  jpg:'🖼', jpeg:'🖼', png:'🖼', gif:'🖼', webp:'🖼', svg:'🖼', bmp:'🖼', ico:'🖼',
+};
+
+const EXT_CATEGORY = {
+  mp3:'music', wav:'music', flac:'music', aac:'music', ogg:'music', m4a:'music', wma:'music',
+  zip:'compressed', rar:'compressed', '7z':'compressed', tar:'compressed', gz:'compressed', bz2:'compressed', xz:'compressed',
+  mp4:'videos', mkv:'videos', avi:'videos', mov:'videos', wmv:'videos', webm:'videos', flv:'videos', m4v:'videos',
+  exe:'programs', msi:'programs', deb:'programs', rpm:'programs', dmg:'programs', pkg:'programs',
+  pdf:'documents', doc:'documents', docx:'documents', txt:'documents', xls:'documents', xlsx:'documents',
+  ppt:'documents', pptx:'documents', csv:'documents',
+  apk:'apks',
+  jpg:'images', jpeg:'images', png:'images', gif:'images', webp:'images', svg:'images', bmp:'images', ico:'images',
+};
+
+function getExt(filename) {
+  if (!filename) return '';
+  const i = filename.lastIndexOf('.');
+  return i >= 0 ? filename.slice(i + 1).toLowerCase() : '';
+}
+
+function getFileIcon(filename) {
+  return EXT_MAP[getExt(filename)] || '📦';
+}
+
+function getFileCategory(filename) {
+  return EXT_CATEGORY[getExt(filename)] || 'other';
+}
+
+function getFileTypeLabel(filename) {
+  const ext = getExt(filename);
+  return ext ? ext.toUpperCase() + ' file' : 'File';
+}
+
+// ── Server status ─────────────────────────────────────────────────
+
+function setServerStatus(online) {
+  const dot   = document.getElementById('server-dot');
+  const label = document.getElementById('server-label');
+  dot.className = 'status-dot ' + (online ? 'online' : 'offline');
+  label.textContent = online ? 'Connected' : 'Server unreachable';
+}
+
+// ── Toast ─────────────────────────────────────────────────────────
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ── Modal ─────────────────────────────────────────────────────────
+
+function openModal() {
+  document.getElementById('url-input').value = '';
+  clearModalMsg();
+  document.getElementById('modal-overlay').classList.add('open');
+  setTimeout(() => document.getElementById('url-input').focus(), 120);
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('open');
+  setModalBtn('default');
+  clearModalMsg();
+}
+
+function handleOverlayClick(e) {
+  if (e.target === document.getElementById('modal-overlay')) closeModal();
+}
+
+function showModalMsg(text, type) {
+  clearTimeout(msgTimer);
+  const el = document.getElementById('modal-msg');
+  el.textContent = text;
+  el.className   = 'modal-msg ' + (type || '');
+  if (type === 'info') {
+    msgTimer = setTimeout(() => { el.textContent = ''; el.className = 'modal-msg'; }, 3000);
+  }
+}
+
+function clearModalMsg() {
+  clearTimeout(msgTimer);
+  const el = document.getElementById('modal-msg');
+  el.textContent = '';
+  el.className   = 'modal-msg';
+}
+
+const MODAL_BTN_STATES = {
+  default:  { html: 'Start Download',                                          disabled: false },
+  browsing: { html: '<span class="btn-spinner"></span>Opening…',               disabled: true  },
+  starting: { html: '<span class="btn-spinner"></span>Starting…',              disabled: true  },
+};
+
+function setModalBtn(state) {
+  const btn = document.getElementById('modal-start-btn');
+  const s   = MODAL_BTN_STATES[state] || MODAL_BTN_STATES.default;
+  btn.innerHTML = s.html;
+  btn.disabled  = s.disabled;
+}
+
+// ── Browse folder ─────────────────────────────────────────────────
+
+async function handleBrowse() {
+  setModalBtn('browsing');
+  try {
+    const res  = await fetch('/browse-folder');
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    if (data.path) {
+      modalSavePath = data.path;
+      document.getElementById('modal-save-path').textContent = data.path;
+    } else {
+      showModalMsg('No folder selected.', 'info');
+    }
+  } catch (e) {
+    showModalMsg('Could not open folder picker: ' + e.message, 'error');
+  } finally {
+    setModalBtn('default');
+  }
+}
+
+// ── handleDownload ────────────────────────────────────────────────
+
+async function handleDownload() {
+  const urlInput = document.getElementById('url-input');
+  const url = urlInput.value.trim();
+  if (!url) { showModalMsg('Please enter a download URL.', 'error'); urlInput.focus(); return; }
+
+  clearModalMsg();
+
+  let savePath = modalSavePath;
+  if (!savePath) {
+    setModalBtn('browsing');
+    try {
+      const res  = await fetch('/browse-folder');
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      savePath = data.path;
+      if (!savePath) {
+        showModalMsg('Download cancelled — no folder selected.', 'info');
+        setModalBtn('default');
+        return;
+      }
+      modalSavePath = savePath;
+      document.getElementById('modal-save-path').textContent = savePath;
+    } catch (e) {
+      showModalMsg('Could not open folder picker: ' + e.message, 'error');
+      setModalBtn('default');
+      return;
+    }
+  }
+
+  setModalBtn('starting');
+
+  const segments = parseInt(document.getElementById('segments-input').value, 10) || 4;
+  const retries  = parseInt(document.getElementById('retries-input').value,  10) || 3;
+
+  try {
+    const res = await fetch('/downloads', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ url, save_path: savePath, segments, retries }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: `HTTP ${res.status}` }));
+      throw new Error(err.detail || `Server error ${res.status}`);
+    }
+    urlInput.value = '';
+    closeModal();
+  } catch (e) {
+    showModalMsg('Failed to start download: ' + e.message, 'error');
+  } finally {
+    setModalBtn('default');
+  }
+}
+
+// Allow Enter in URL input to start
+document.getElementById('url-input').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') handleDownload();
+});
+
+// ── Row selection ─────────────────────────────────────────────────
+
+function selectRow(id) {
+  if (selectedId && allRows.has(selectedId)) {
+    allRows.get(selectedId).classList.remove('row-selected');
+  }
+  selectedId = id;
+  if (id && allRows.has(id)) {
+    allRows.get(id).classList.add('row-selected');
+  }
+}
+
+// ── Context menu ──────────────────────────────────────────────────
+
+function showCtxMenu(id, x, y) {
+  ctxTargetId = id;
+  const menu = document.getElementById('ctx-menu');
+  menu.style.display = 'block';
+  const mw = 170, mh = 100;
+  menu.style.left = (x + mw > window.innerWidth  ? x - mw : x) + 'px';
+  menu.style.top  = (y + mh > window.innerHeight ? y - mh : y) + 'px';
+}
+
+function hideCtxMenu() {
+  document.getElementById('ctx-menu').style.display = 'none';
+  ctxTargetId = null;
+}
+
+document.addEventListener('click', function(e) {
+  if (!document.getElementById('ctx-menu').contains(e.target)) hideCtxMenu();
+});
+
+// Context menu actions
+function ctxDelete() { if (ctxTargetId) cancelDownload(ctxTargetId); hideCtxMenu(); }
+
+async function ctxRedownload() {
+  const id = ctxTargetId;
+  hideCtxMenu();
+  if (!id) return;
+  const d = _lastDownloads.find(x => x.id === id);
+  if (!d || !d.url) { showToast('Cannot redownload: URL unavailable'); return; }
+  const saveDir = d.save_path ? d.save_path.replace(/[/\\][^/\\]+$/, '') : modalSavePath;
+  try {
+    const res = await fetch('/downloads', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({
+        url:       d.url,
+        save_path: saveDir,
+        segments:  d.segments_count || d.segments || 4,
+        retries:   d.retries        || 3,
+      }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: 'Unknown error' }));
+      showToast('Redownload failed: ' + (err.detail || 'Unknown error'));
+      return;
+    }
+    showToast('Redownload started');
+  } catch (e) {
+    showToast('Redownload failed: ' + e.message);
+  }
+}
+
+// ── Download API calls ────────────────────────────────────────────
+
+async function pauseDownload(id) {
+  try { await fetch(`/downloads/${id}/pause`, { method: 'POST' }); }
+  catch (e) { showToast('Pause failed: ' + e.message); }
+}
+
+async function resumeDownload(id) {
+  try { await fetch(`/downloads/${id}/resume`, { method: 'POST' }); }
+  catch (e) { showToast('Resume failed: ' + e.message); }
+}
+
+async function cancelDownload(id) {
+  try { await fetch(`/downloads/${id}`, { method: 'DELETE' }); }
+  catch (e) { showToast('Cancel failed: ' + e.message); }
+}
+
+// ── Toolbar actions ───────────────────────────────────────────────
+
+function stopAll() {
+  for (const [id, tr] of allRows) {
+    if (tr.dataset.status === 'downloading') pauseDownload(id);
+  }
+}
+
+// ── Sidebar category selection ────────────────────────────────────
+
+function selectCat(el) {
+  document.querySelectorAll('.cat-item').forEach(i => i.classList.remove('selected'));
+  el.classList.add('selected');
+  activeCategory = el.dataset.cat || 'all';
+  applyFilter();
+}
+
+// ── Category filter ───────────────────────────────────────────────
+
+function applyFilter() {
+  let visibleCount = 0;
+  for (const [id, tr] of allRows) {
+    const d = _lastDownloads.find(x => x.id === id);
+    const match = activeCategory === 'all' ||
+                  (d && getFileCategory(d.filename) === activeCategory);
+    tr.style.display = match ? '' : 'none';
+    if (match) visibleCount++;
+  }
+
+  const emptyRow = document.getElementById('empty-row');
+  const emptyTd  = emptyRow.querySelector('td');
+  if (allRows.size === 0) {
+    emptyTd.innerHTML = 'No downloads yet. Click <strong>⬇ Add URL</strong> to get started.';
+    emptyRow.style.display = '';
+  } else if (visibleCount === 0) {
+    emptyTd.textContent = 'No downloads in this category.';
+    emptyRow.style.display = '';
+  } else {
+    emptyRow.style.display = 'none';
+  }
+}
+
+// ── Sidebar collapsibles ──────────────────────────────────────────
+
+function toggleSection(name) {
+  const head = document.getElementById('head-' + name);
+  const body = document.getElementById('body-' + name);
+  const open = body.classList.toggle('open');
+  head.classList.toggle('open', open);
+}
+
+// ── Helpers ───────────────────────────────────────────────────────
+
+let _lastDownloads = [];
+
+function getCurrentState(id) {
+  return _lastDownloads.find(d => d.id === id) || null;
+}
+
+// ── Inline action button helper ───────────────────────────────────
+
+function _setInlineAction(btn, d, id) {
+  if (d.status === 'downloading') {
+    btn.textContent = '⏸';
+    btn.title       = 'Pause';
+    btn.className   = 'row-act-btn act-pause';
+    btn.style.display = '';
+    btn.onclick = (e) => { e.stopPropagation(); pauseDownload(id); };
+  } else if (d.status === 'paused') {
+    btn.textContent = '▶';
+    btn.title       = 'Resume';
+    btn.className   = 'row-act-btn act-resume';
+    btn.style.display = '';
+    btn.onclick = (e) => { e.stopPropagation(); resumeDownload(id); };
+  } else {
+    btn.style.display = 'none';
+  }
+}
+
+// ── Create table row ──────────────────────────────────────────────
+
+function createRow(d) {
+  const tr = document.createElement('tr');
+  tr.dataset.id     = d.id;
+  tr.dataset.status = d.status;
+
+  tr.addEventListener('click', (e) => {
+    if (!e.target.closest('.ctx-btn') && !e.target.closest('.row-act-btn')) {
+      selectRow(d.id);
+    }
+  });
+
+  // Name (col 0)
+  const tdName = document.createElement('td');
+  tdName.className = 'col-name';
+  tdName.innerHTML = `
+    <div class="file-cell">
+      <span class="file-icon">${getFileIcon(d.filename)}</span>
+      <div class="file-info">
+        <div class="file-name" title="${escHtml(d.filename)}">${escHtml(d.filename || '—')}</div>
+        <div class="file-type">${escHtml(getFileTypeLabel(d.filename))}</div>
+      </div>
+    </div>
+  `;
+
+  // Size (col 1)
+  const tdSize = document.createElement('td');
+  tdSize.className = 'col-size cell-size';
+  tdSize.textContent = d.total_size > 0 ? formatBytes(d.total_size) : '—';
+
+  // Status (col 2)
+  const tdStatus = document.createElement('td');
+  tdStatus.className = 'col-status';
+  _renderStatusCell(tdStatus, d);
+
+  // Time Left (col 3)
+  const tdTime = document.createElement('td');
+  tdTime.className = 'col-time cell-time';
+  tdTime.textContent = ACTIVE_STATS.has(d.status) && d.status !== 'paused'
+    ? formatETA(d.eta_seconds) : '—';
+
+  // Date (col 4)
+  const tdDate = document.createElement('td');
+  tdDate.className = 'col-date cell-date';
+  tdDate.textContent = formatTime(d.start_time);
+
+  // Actions + context menu (col 5)
+  const tdMenu = document.createElement('td');
+  tdMenu.className = 'col-menu';
+
+  const menuWrap = document.createElement('div');
+  menuWrap.className = 'menu-cell-wrap';
+
+  const actBtn = document.createElement('button');
+  actBtn.className = 'row-act-btn';
+  _setInlineAction(actBtn, d, d.id);
+
+  const ctxBtn = document.createElement('button');
+  ctxBtn.className   = 'ctx-btn';
+  ctxBtn.textContent = '⋮';
+  ctxBtn.title       = 'More options';
+  ctxBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    selectRow(d.id);
+    showCtxMenu(d.id, e.clientX, e.clientY);
+  });
+
+  menuWrap.append(actBtn, ctxBtn);
+  tdMenu.appendChild(menuWrap);
+
+  tr.append(tdName, tdSize, tdStatus, tdTime, tdDate, tdMenu);
+  return tr;
+}
+
+// ── Update row in-place ───────────────────────────────────────────
+
+function updateRow(tr, d) {
+  tr.dataset.status = d.status;
+  const cells = tr.children; // 0:name 1:size 2:status 3:time 4:date 5:menu
+
+  if (d.total_size > 0) cells[1].textContent = formatBytes(d.total_size);
+
+  _renderStatusCell(cells[2], d);
+
+  cells[3].textContent = (ACTIVE_STATS.has(d.status) && d.status !== 'paused')
+    ? formatETA(d.eta_seconds) : '—';
+
+  // Update inline action button
+  const menuWrap = cells[5].firstChild;
+  if (menuWrap) _setInlineAction(menuWrap.children[0], d, d.id);
+}
+
+function _renderStatusCell(td, d) {
+  if (ACTIVE_STATS.has(d.status)) {
+    const pct      = d.progress_pct || 0;
+    const animCls  = d.status === 'downloading' ? 'dl-bar-fill animating' : 'dl-bar-fill paused-fill';
+    const pctText  = pct.toFixed(1) + '%';
+    td.innerHTML = `
+      <div class="dl-status-wrap">
+        <div class="dl-bar-track">
+          <div class="${animCls}" style="width:${pct}%"></div>
+        </div>
+        <span class="dl-pct">${pctText}</span>
+      </div>
+    `;
+  } else {
+    const badgeMap = {
+      completed: '<span class="badge badge-completed">✓ Complete</span>',
+      failed:    '<span class="badge badge-failed">✕ Failed</span>',
+      cancelled: '<span class="badge badge-cancelled">Cancelled</span>',
+    };
+    td.innerHTML = badgeMap[d.status] || `<span class="badge badge-pending">${d.status}</span>`;
+  }
+}
+
+// ── Update sidebar ────────────────────────────────────────────────
+
+function updateSidebar(downloads) {
+  const counts = { all: 0, music: 0, compressed: 0, videos: 0, programs: 0, documents: 0, apks: 0, images: 0 };
+  const unfinished = [];
+  const finished   = [];
+
+  for (const d of downloads) {
+    if (clearedIds.has(d.id)) continue;
+    counts.all++;
+    const cat = getFileCategory(d.filename);
+    if (counts[cat] !== undefined) counts[cat]++;
+
+    if (ACTIVE_STATS.has(d.status))  unfinished.push(d);
+    if (HISTORY_STATS.has(d.status)) finished.push(d);
+  }
+
+  for (const [key, val] of Object.entries(counts)) {
+    const el = document.getElementById('cat-' + key);
+    if (el) el.textContent = val;
+  }
+
+  document.getElementById('cat-unfinished').textContent = unfinished.length;
+  document.getElementById('cat-finished').textContent   = finished.length;
+
+  _fillSidebarList('body-unfinished', unfinished);
+  _fillSidebarList('body-finished',   finished);
+}
+
+function _fillSidebarList(bodyId, items) {
+  const body = document.getElementById(bodyId);
+  body.innerHTML = '';
+  for (const d of items.slice(0, 10)) {
+    const div = document.createElement('div');
+    div.className   = 'section-dl-item';
+    div.textContent = d.filename || d.url;
+    div.title       = d.filename || d.url;
+    body.appendChild(div);
+  }
+}
+
+// ── Update status bar ─────────────────────────────────────────────
+
+function updateStatusBar(downloads) {
+  const visible = downloads.filter(d => !clearedIds.has(d.id));
+  const totalBytes = visible.reduce((s, d) => s + (d.total_size || 0), 0);
+  const currentSpeed = visible
+    .filter(d => d.status === 'downloading')
+    .reduce((s, d) => s + (d.speed_bps || 0), 0);
+
+  document.getElementById('sb-left').textContent =
+    `${visible.length} download${visible.length !== 1 ? 's' : ''} · ${formatBytes(totalBytes)} total`;
+
+  document.getElementById('sb-right').textContent =
+    currentSpeed > 0 ? `⬇ ${formatSpeed(currentSpeed)}` : '⬇ —';
+}
+
+// ── Main UI update ────────────────────────────────────────────────
+
+function updateUI(downloads) {
+  _lastDownloads = downloads;
+
+  const visibleDownloads = downloads.filter(d => !clearedIds.has(d.id));
+  const downloadIds      = new Set(visibleDownloads.map(d => d.id));
+
+  for (const [id, tr] of allRows) {
+    if (!downloadIds.has(id)) {
+      tr.remove();
+      allRows.delete(id);
+      if (selectedId === id) selectRow(null);
+    }
+  }
+
+  const tbody = document.getElementById('all-tbody');
+  for (const d of visibleDownloads) {
+    if (allRows.has(d.id)) {
+      updateRow(allRows.get(d.id), d);
+    } else {
+      const tr = createRow(d);
+      tbody.appendChild(tr);
+      allRows.set(d.id, tr);
+    }
+  }
+
+  applyFilter();
+  updateSidebar(downloads);
+  updateStatusBar(downloads);
+}
+
+// ── Clear history ─────────────────────────────────────────────────
+
+function clearHistory() {
+  for (const [id, tr] of allRows) {
+    if (HISTORY_STATS.has(tr.dataset.status)) {
+      clearedIds.add(id);
+      tr.remove();
+      allRows.delete(id);
+      if (selectedId === id) selectRow(null);
+    }
+  }
+  applyFilter();
+}
+
+// ── Polling ───────────────────────────────────────────────────────
+
+async function poll() {
+  try {
+    const res  = await fetch('/downloads');
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    setServerStatus(true);
+    updateUI(data);
+  } catch (_) {
+    setServerStatus(false);
+  }
+}
+
+function startPolling() {
+  poll();
+  setInterval(poll, POLL_MS);
+}
+
+// ── Boot ──────────────────────────────────────────────────────────
+startPolling();
+</script>
+</body>
+</html>
