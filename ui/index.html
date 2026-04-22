@@ -815,6 +815,145 @@
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: #3a3a3a; border-radius: 4px; }
     ::-webkit-scrollbar-thumb:hover { background: #4a4a4a; }
+
+    /* ── Feature 2: Paste button ─────────────────────────────────── */
+    .url-input-wrap {
+      position: relative;
+      margin-bottom: 12px;
+    }
+    .url-input-wrap input[type="url"] {
+      margin-bottom: 0;
+      padding-right: 60px;
+    }
+    #paste-btn {
+      position: absolute;
+      right: 6px;
+      top: 50%;
+      transform: translateY(-50%);
+      height: 22px;
+      padding: 0 8px;
+      background: #3a3a3a;
+      border: none;
+      border-radius: 99px;
+      color: var(--muted);
+      font-size: 10px;
+      font-family: var(--font);
+      cursor: pointer;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      transition: background 0.12s, color 0.12s;
+    }
+    #paste-btn:hover { background: #4a4a4a; color: var(--text); }
+
+    /* ── Feature 3: Search bar ───────────────────────────────────── */
+    #search-bar-row {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding: 5px 10px;
+      background: var(--sidebar);
+      border-bottom: 1px solid var(--border);
+    }
+    #search-input {
+      width: 200px;
+      height: 26px;
+      background: var(--input);
+      border: 1px solid var(--input-bd);
+      border-radius: 6px;
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 12px;
+      padding: 0 9px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    #search-input:focus { border-color: var(--blue); }
+    #search-input::placeholder { color: var(--dim); }
+
+    /* ── Feature 4: Theme toggle ─────────────────────────────────── */
+    #theme-toggle {
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+      padding: 2px 4px;
+      border-radius: 4px;
+      line-height: 1;
+      transition: background 0.12s;
+    }
+    #theme-toggle:hover { background: rgba(128,128,128,0.2); }
+
+    /* ── Feature 4: Light mode palette ──────────────────────────── */
+    body.light-mode {
+      --bg:       #ffffff;
+      --sidebar:  #e8e8ed;
+      --toolbar:  #e8e8ed;
+      --hover:    #f0f0f5;
+      --selected: #e0e0e8;
+      --row-sel:  #d4e3ff;
+      --border:   #d1d1d6;
+      --input:    #ffffff;
+      --input-bd: #d1d1d6;
+      --text:     #1d1d1f;
+      --muted:    #6e6e73;
+      --dim:      #8e8e93;
+      background: #f5f5f7;
+      color: #1d1d1f;
+    }
+    body.light-mode #app {
+      background: #f5f5f7;
+      border-color: #c8c8cc;
+      box-shadow: 0 0 0 1px #b0b0b8, 0 20px 60px rgba(0,0,0,0.12);
+    }
+    body.light-mode #top-bar              { background: #e8e8ed; }
+    body.light-mode .app-name             { color: #6e6e73; }
+    body.light-mode .tb-sep               { background: #c8c8d0; }
+    body.light-mode .tb-btn               { background: #d0d0d8; color: #1d1d1f; }
+    body.light-mode .tb-btn:hover         { background: #c0c0c8; }
+    body.light-mode .tb-btn.accent        { background: #0a84ff; color: #fff; }
+    body.light-mode .tb-btn.accent:hover  { background: #0070db; }
+    body.light-mode tbody tr              { background: #ffffff; }
+    body.light-mode tbody tr:nth-child(even) { background: #f8f8fc; }
+    body.light-mode tbody td              { border-bottom-color: #e5e5ea; }
+    body.light-mode .dl-bar-track         { background: #d1d1d6; }
+    body.light-mode .badge-completed      { background: #d4f4d4; color: #1c8a1c; }
+    body.light-mode .badge-failed         { background: #ffd4d4; color: #cc1e1e; }
+    body.light-mode .badge-cancelled      { background: #e8e8ed; color: #6e6e73; }
+    body.light-mode .badge-paused         { background: #fef0c0; color: #9a6800; }
+    body.light-mode .row-act-btn          { background: #d0d0d8; }
+    body.light-mode .row-act-btn:hover    { background: #c0c0c8; }
+    body.light-mode .ctx-btn:hover        { background: #d0d0d8; color: #1d1d1f; }
+    body.light-mode #ctx-menu             { background: #f5f5f7; border-color: #d1d1d6; box-shadow: 0 8px 32px rgba(0,0,0,0.15); }
+    body.light-mode .ctx-item             { color: #1d1d1f; }
+    body.light-mode .ctx-sep              { background: #d1d1d6; }
+    body.light-mode #modal                { background: #ffffff; }
+    body.light-mode .modal-close          { background: #d0d0d8; color: #6e6e73; }
+    body.light-mode .modal-close:hover    { background: #c0c0c8; color: #1d1d1f; }
+    body.light-mode .modal-body input[type="url"],
+    body.light-mode .modal-body input[type="number"] { background: #f5f5f7; border-color: #d1d1d6; color: #1d1d1f; }
+    body.light-mode .modal-body input::placeholder   { color: #b0b0b8; }
+    body.light-mode .modal-path-row       { background: #f5f5f7; border-color: #d1d1d6; }
+    body.light-mode .btn-browse           { background: #d0d0d8; color: #1d1d1f; }
+    body.light-mode .btn-browse:hover     { background: #c0c0c8; }
+    body.light-mode .btn-cancel-modal     { background: #d0d0d8; color: #1d1d1f; }
+    body.light-mode .btn-cancel-modal:hover { background: #c0c0c8; }
+    body.light-mode #paste-btn            { background: #d0d0d8; color: #6e6e73; }
+    body.light-mode #paste-btn:hover      { background: #c0c0c8; color: #1d1d1f; }
+    body.light-mode .toast                { background: #f0f0f5; border-color: #d1d1d6; color: #1d1d1f; }
+    body.light-mode .sidebar-header       { color: #8e8e93; }
+    body.light-mode .cat-item             { color: #3a3a3c; }
+    body.light-mode .cat-item:hover       { background: #d8d8e0; }
+    body.light-mode .cat-item.selected    { background: #d4d4dc; }
+    body.light-mode .cat-count            { background: rgba(0,0,0,0.08); color: #6e6e73; }
+    body.light-mode .sidebar-section-head { color: #3a3a3c; }
+    body.light-mode .sidebar-section-head:hover { background: #d8d8e0; }
+    body.light-mode .section-dl-item      { color: #8e8e93; }
+    body.light-mode .sort-arrow           { color: #b0b0b8; }
+    body.light-mode ::-webkit-scrollbar-thumb       { background: #c0c0c8; }
+    body.light-mode ::-webkit-scrollbar-thumb:hover { background: #a8a8b2; }
   </style>
 </head>
 <body>
@@ -833,6 +972,7 @@
       <span class="app-subtitle">Simple Download Manager</span>
     </div>
     <div class="top-right">
+      <button id="theme-toggle" title="Toggle light/dark mode">🌙</button>
       <span class="status-dot" id="server-dot"></span>
       <span id="server-label">Connecting…</span>
     </div>
@@ -917,6 +1057,12 @@
     <!-- ── Content ─────────────────────────────────────────────── -->
     <div id="content">
 
+      <!-- Search bar -->
+      <div id="search-bar-row">
+        <input type="text" id="search-input" placeholder="🔍 Search downloads..."
+               autocomplete="off" spellcheck="false" />
+      </div>
+
       <!-- Downloads table -->
       <div id="table-wrapper">
         <table id="downloads-table">
@@ -968,9 +1114,12 @@
     <div class="modal-body">
 
       <label class="modal-label" for="url-input">Download URL</label>
-      <input type="url" id="url-input"
-             placeholder="https://example.com/file.zip"
-             autocomplete="off" spellcheck="false" />
+      <div class="url-input-wrap">
+        <input type="url" id="url-input"
+               placeholder="https://example.com/file.zip"
+               autocomplete="off" spellcheck="false" />
+        <button id="paste-btn" type="button" title="Paste from clipboard">📋 Paste</button>
+      </div>
 
       <div class="modal-row-2">
         <div class="modal-field">
@@ -1030,6 +1179,11 @@ let activeCategory   = 'all';  // sidebar filter — 'all' | category key
 let modalSavePath    = '/mnt/c/Users/user/Downloads';
 let msgTimer         = null;
 let toastTimer       = null;
+
+// ── Feature 1 & 3 state ───────────────────────────────────────────
+const notifiedIds    = new Set(); // download ids that already fired a notification
+let _initialLoadDone = false;     // skip notifications on first poll
+let searchQuery      = '';        // live search filter string
 
 // ── Formatters ────────────────────────────────────────────────────
 
@@ -1366,11 +1520,14 @@ function selectCat(el) {
 // ── Category filter ───────────────────────────────────────────────
 
 function applyFilter() {
+  const q = searchQuery.trim().toLowerCase();
   let visibleCount = 0;
   for (const [id, tr] of allRows) {
     const d = _lastDownloads.find(x => x.id === id);
-    const match = activeCategory === 'all' ||
-                  (d && getFileCategory(d.filename) === activeCategory);
+    const catMatch    = activeCategory === 'all' ||
+                        (d && getFileCategory(d.filename) === activeCategory);
+    const searchMatch = !q || (d && d.filename && d.filename.toLowerCase().includes(q));
+    const match = catMatch && searchMatch;
     tr.style.display = match ? '' : 'none';
     if (match) visibleCount++;
   }
@@ -1379,6 +1536,9 @@ function applyFilter() {
   const emptyTd  = emptyRow.querySelector('td');
   if (allRows.size === 0) {
     emptyTd.innerHTML = 'No downloads yet. Click <strong>⬇ Add URL</strong> to get started.';
+    emptyRow.style.display = '';
+  } else if (visibleCount === 0 && q) {
+    emptyTd.textContent = 'No downloads match your search.';
     emptyRow.style.display = '';
   } else if (visibleCount === 0) {
     emptyTd.textContent = 'No downloads in this category.';
@@ -1603,6 +1763,24 @@ function updateStatusBar(downloads) {
 function updateUI(downloads) {
   _lastDownloads = downloads;
 
+  // Feature 1: desktop notifications for newly completed downloads
+  if (Notification.permission === 'granted') {
+    for (const d of downloads) {
+      if (d.status === 'completed' && !notifiedIds.has(d.id)) {
+        if (_initialLoadDone) {
+          try {
+            new Notification('SDM — Download Complete', {
+              body: d.filename || d.url || 'Download finished',
+              icon: '/favicon.ico',
+            });
+          } catch (_) {}
+        }
+        notifiedIds.add(d.id);
+      }
+    }
+  }
+  _initialLoadDone = true;
+
   const visibleDownloads = downloads.filter(d => !clearedIds.has(d.id));
   const downloadIds      = new Set(visibleDownloads.map(d => d.id));
 
@@ -1663,7 +1841,48 @@ function startPolling() {
   setInterval(poll, POLL_MS);
 }
 
+// ── Feature 2: Paste button ───────────────────────────────────────
+document.getElementById('paste-btn').addEventListener('click', async function () {
+  try {
+    const text = await navigator.clipboard.readText();
+    if (!text || !text.trim()) {
+      showModalMsg('Nothing to paste.', 'info');
+      return;
+    }
+    document.getElementById('url-input').value = text.trim();
+  } catch (_) {
+    showModalMsg('Nothing to paste.', 'info');
+  }
+});
+
+// ── Feature 3: Search input ───────────────────────────────────────
+document.getElementById('search-input').addEventListener('input', function () {
+  searchQuery = this.value;
+  applyFilter();
+});
+
+// ── Feature 4: Theme toggle ───────────────────────────────────────
+document.getElementById('theme-toggle').addEventListener('click', function () {
+  const isLight = document.body.classList.toggle('light-mode');
+  document.documentElement.style.background = isLight ? '#f5f5f7' : '';
+  this.textContent = isLight ? '☀️' : '🌙';
+  localStorage.setItem('sdm-theme', isLight ? 'light' : 'dark');
+});
+
 // ── Boot ──────────────────────────────────────────────────────────
+
+// Apply saved theme before first paint
+(function () {
+  if (localStorage.getItem('sdm-theme') === 'light') {
+    document.body.classList.add('light-mode');
+    document.documentElement.style.background = '#f5f5f7';
+    document.getElementById('theme-toggle').textContent = '☀️';
+  }
+})();
+
+// Request desktop notification permission
+Notification.requestPermission();
+
 startPolling();
 </script>
 </body>
